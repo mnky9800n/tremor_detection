@@ -1,0 +1,395 @@
+﻿<!DOCTYPE html>
+<html>
+<head>
+    <meta name="viewport" content="initial-scale=1.0, user-scalable=no">
+    <meta charset="utf-8">
+    <title>Tremor Detection Outreach</title>
+    <link href="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.5/css/bootstrap.min.css" rel="stylesheet" />
+
+
+    <style>
+        html, body {
+            height: 100%;
+            margin: 0;
+            padding: 0;
+        }
+
+        #map {
+            height: 100%;
+        }
+        #control-bar {
+            position:fixed; top:0; left:0; width:20%; height:100%; background:#EEE; overflow:auto;
+        }
+        input[type="text"]{
+            width:100px;
+        }
+        .eq_tools {
+            display:none;
+        }
+    </style>
+
+    <!-- double sided slider -->
+    <script src="http://code.jquery.com/jquery-1.10.2.js"></script>
+    <script src="http://code.jquery.com/ui/1.11.4/jquery-ui.js"></script>
+    <link rel="stylesheet" href="http://code.jquery.com/ui/1.11.4/themes/smoothness/jquery-ui.css">
+
+</head>
+<body>
+    <header class="navbar navbar-default" role="navigation">
+        <div class="container-fluid">
+            <!-- Brand and toggle get grouped for better mobile display -->
+            <div class="navbar-header">
+                <button type="button" class="navbar-toggle" data-toggle="collapse" data-target="#bs-example-navbar-collapse-1">
+                    <span class="glyphicon glyphicon-menu-hamburger" aria-hidden="true"></span>
+
+
+                </button>
+                <a class="navbar-brand">Earthquake Research Institute of University of Tokyo</a>
+            </div>
+            <!-- Collect the nav links, forms, and other content for toggling -->
+            <nav class="collapse navbar-collapse" id="bs-example-navbar-collapse-1">
+                <span class="sr-only">Toggle navigation</span>
+
+                <ul class="nav navbar-nav">
+                    <li class="active"><a href="index.html">Maps</a></li>
+                    <li class="active"><a href="graphs.html">Graphs</a></li>
+                    <li class="active"><a href="about.html">About</a></li>
+                </ul>
+            </nav><!-- /.navbar-collapse -->
+        </div><!-- /.container-fluid -->
+    </header>
+    <div class="container-fluid">
+        <div class="row">
+            <br />
+            <div class="col-md-4 eq_tools" id="mag_range">
+                <label for="magnitudeRange">Magnitude: </label>
+                <input id="magnitudeRange" type="text" readonly style="border:0; color:#f6931f; font-weight:bold;" />
+                <div id="magnitude-slider"></div>
+            </div>
+
+            <div class="col-md-4" id="e_range">
+                <form>
+                    <label for="energyRange">Energy (Joules):</label>
+                    <input id="energyRange" type="text" readonly style="border:0; color:#f6931f; font-weight:bold;" />
+                    <div id="slider-range"></div>
+                </form>
+
+            </div>
+
+            <div class="col-md-4" id="d_range">
+                <form>
+                    <label for="depthRange">Depth (kilometers):</label>
+                    <input id="depthRange" type="text" readonly style="border:0; color:#ff0000; font-weight:bold;" />
+                    <div id="depth-slider"></div>
+                </form>
+            </div>
+
+            <div class="col-md-4" id="t_range">
+                <form>
+                    <label for="durationRange">Duration (minutes):</label>
+                    <input id="durationRange" type="text" readonly style="border:0; color:#ff0000; font-weight:bold" />
+                    <div id="duration-slider"></div>
+                </form>
+            </div>
+            <br />
+        </div>
+
+        <div class="row">
+            <br />
+            <div class="col-md-4">
+                <label for="startDate">
+                    Start Date:
+                    <input id="startDate" type="text" min="1/1/1900" max="1/1/2016" value="1/1/1900" />
+                </label>
+                <label for="endDate">
+                    End Date:
+                    <input id="endDate" type="text" min="1/1/1900" max="1/1/2016" value="1/1/2016" />
+                </label>
+
+            </div>
+            <!--<div class="col-md-4">
+                <label for="endDate">
+                    End Date:
+                    <input id="endDate" type="text" min="1/1/1900" max="1/1/2016" value="1/1/2016" />
+                </label>
+
+            </div>-->
+            <div class="col-md-4">
+                <div class="col-md-6" id="reg_range">
+                    <label for="filterRegion">Filter region:</label>
+                    <select id="filterRegion">
+                        <option value="" default="default">All Regions</option>
+                        <option value="east_shikoku">East Shikoku</option>
+                        <option value="kii_area">Kii Area</option>
+                        <option value="tokai_area">Tokai Area</option>
+                        <option value="west_shikoku">West Shikoku</option>
+                    </select>
+                </div>
+                <div class="col-md-6" id="datasets">
+                    <label for="dataset">Dataset:</label>
+                    <select id="dataset">
+                        <option value="tremor_db" default="default">Hi-Net Tremor (Annoura)</option>
+                        <option value="earthquake_db">Hi=Net ALL</option>
+                    </select>
+                </div>
+
+            </div>
+            <div class="col-md-4">
+                <label for="heatMap">
+                    <span>Heat Map:</span>
+                    <input id="heatMap" type="checkbox" />
+                </label>
+
+            </div>
+            <br />
+        </div>
+    </div>
+    
+
+    <div id="map"></div>
+    <script>
+        $('#dataset').change(function () {
+            //put div changes here
+            if (document.getElementById('dataset').value == 'earthquake_db' )
+            {
+                //make stuff disappear
+                $('#e_range').hide();
+                $('#t_range').hide();
+                $('#reg_range').hide();
+
+                //make stuff appear
+                $('#mag_range').show();
+            }
+            else {
+                //make stuff disappear
+                $('#mag_range').hide();
+
+                //make stuff appear
+                $('#e_range').show();
+                $('#t_range').show();
+                $('#reg_range').show();
+
+            }
+        })
+
+        var table_id = {
+            'tremor_db': '1JMtIooVcEGFlN7V40wTdM5TVVF4RnAR4c6tPKhfh',
+            'earthquake_db': '1Ia3RyayCUdpLezHTcpQRYAWtucflc9Y2FsNsk3Q9'
+        };
+        var tab = document.getElementById('dataset');
+
+        // this seems to make a request as long as you are dragging the bar, maybe this is bad
+        // TODO : is it wise to function this out into a single function that then gets called four times?
+
+        $(function () {
+            $("#magnitude-range").slider({
+                range: true,
+                min: 0,
+                max: 10,
+                values: [0, 10],
+                slide: function (event, ui) {
+                    $("#magnitudeRange").val(ui.values[0] + " - " + ui.values[1]).change();
+                }
+            });
+            $("#magnitudeRange").val($("#magnitude-range").slider("values", 0) +
+              " - " + $("#magnitude-range").slider("values", 1)).change();
+        });
+
+        $(function () {
+            $("#slider-range").slider({
+                range: true,
+                min: 0,
+                max: 20000000,
+                values: [0, 20000000],
+                slide: function (event, ui) {
+                    $("#energyRange").val(ui.values[0] + " - " + ui.values[1]).change();
+                }
+            });
+            $("#energyRange").val($("#slider-range").slider("values", 0) +
+              " - " + $("#slider-range").slider("values", 1)).change();
+        });
+
+        $(function () {
+            $("#depth-slider").slider({
+                range: true,
+                min: 0,
+                max: 80,
+                values: [0, 80],
+                slide: function (event, ui) {
+                    $("#depthRange").val(ui.values[0] + " - " + ui.values[1]).change();
+                }
+            });
+            $("#depthRange").val($("#depth-slider").slider("values", 0) +
+              " - " + $("#depth-slider").slider("values", 1)).change();
+        });
+
+        $(function () {
+            $("#duration-slider").slider({
+                range: true,
+                min: 0,
+                max: 60,
+                values: [0, 60],
+                slide: function (event, ui) {
+                    $("#durationRange").val(ui.values[0] + " - " + ui.values[1]).change();
+                }
+            });
+            $("#durationRange").val($("#duration-slider").slider("values", 0) +
+              " - " + $("#duration-slider").slider("values", 1)).change();
+        });
+
+
+		function initMap() {
+			var map = new google.maps.Map(document.getElementById('map'), {
+				center: {lat: 34.078539, lng: 134.544572},
+				zoom: 8
+			});
+
+			var layer = new google.maps.FusionTablesLayer({
+				query: {
+					select: 'location_1',
+				    //from: '1tqVBRCrqUqcDmAjCStBBAckNhIGqNNOkTXwTEpzb'
+				    from: '1JMtIooVcEGFlN7V40wTdM5TVVF4RnAR4c6tPKhfh'
+					//from: tab.value
+				}
+			})
+
+			//var station_layer = new google.maps.FusionTablesLayer({
+			//    query: {
+			//        select: 'location',
+			//        //from: '1igpb_QshvSPdOI_Jo6x3QCn1LTDTf9mOgYxTggda'
+			//        from: '1JMtIooVcEGFlN7V40wTdM5TVVF4RnAR4c6tPKhfh'
+			//    }
+			//})
+		    //;
+
+			var es = document.getElementById("energyRange");
+			var sd = document.getElementById("startDate");
+			var ed = document.getElementById("endDate");
+			var rg = document.getElementById("filterRegion");
+			var dp = document.getElementById("depthRange");
+			var dr = document.getElementById("durationRange");
+			var hm = document.getElementById("heatMap");
+
+			var updateLayer = function () {
+
+			    var getDoubleSidedFromTo = function (rangeValue) {
+			        var rangeSplit = rangeValue.split(' - ');
+			        return {
+			            rangeFrom: rangeSplit[0],
+			            rangeTo: rangeSplit[1]
+			        };
+			    };
+			    //var energy = getDoubleSidedFromTo(es.value);
+				//var start = sd.value;
+				//var end = ed.value;
+				//var region = rg.value;
+				//var depth = getDoubleSidedFromTo(dp.value);
+				//var duration = getDoubleSidedFromTo(dr.value);
+				//var heatMap = hm.checked;
+
+			    if (tab.value == 'tremor_db') {
+			        var energy = getDoubleSidedFromTo(es.value);
+			        var start = sd.value;
+			        var end = ed.value;
+			        var region = rg.value;
+			        var depth = getDoubleSidedFromTo(dp.value);
+			        var duration = getDoubleSidedFromTo(dr.value);
+			        var heatMap = hm.checked;
+			        var table = tab.value;
+			    }
+			    else if (tab.value == 'earthquake_db') {
+			        //var energy = getDoubleSidedFromTo(es.value);
+			        var start = sd.value;
+			        //var end = ed.value;
+			        //var region = rg.value;
+			        var depth = getDoubleSidedFromTo(dp.value);
+			        //var duration = getDoubleSidedFromTo(dr.value);
+			        var heatMap = hm.checked;
+				    var table = tab.value;
+				}
+			    else {
+			        var energy = getDoubleSidedFromTo(es.value);
+			        var start = sd.value;
+			        var end = ed.value;
+			        var region = rg.value;
+			        var depth = getDoubleSidedFromTo(dp.value);
+			        var duration = getDoubleSidedFromTo(dr.value);
+			        var heatMap = hm.checked;
+			        var table = 'tremor_db'
+			    }
+
+			    if (table == 'earthquake_db') {
+			        //var where = "start_date_time >= '" + start +
+                    //            " and depth >= " + depth.rangeFrom
+                    //            + " and depth <= " + depth.rangeTo;
+
+			        var where = "depth >= " + depth.rangeFrom +
+                        " and depth <= " + depth.rangeTo;
+			    }
+			    else {
+			        var where = "energy >= " + energy.rangeFrom + " and energy <= " + energy.rangeTo +
+                                " and start_date_time >= '" + start + "'" +
+                                " and end_date_time <= '" + end + "'" +
+                                " and depth >= " + depth.rangeFrom + " and depth <= " + depth.rangeTo +
+                                " and duration >= " + duration.rangeFrom + " and duration <= " + duration.rangeTo +
+                                (region != "" ? " and region = '" + region + "'" : "");
+			    }
+				//var where = "energy >= " + energy.rangeFrom + " and energy <= " + energy.rangeTo +
+                //            " and start_date_time >= '" + start + "'" +
+                //            " and end_date_time <= '" + end + "'" +
+                //            " and depth >= " + depth.rangeFrom + " and depth <= " + depth.rangeTo +
+                //            " and duration >= " + duration.rangeFrom + " and duration <= " + duration.rangeTo + 
+                //            (region != "" ? " and region = '" + region + "'" : "");
+
+
+			    layer.setMap(null);
+
+				layer = new google.maps.FusionTablesLayer({
+					query: {
+						select: 'location_1',
+					    //from: '1tqVBRCrqUqcDmAjCStBBAckNhIGqNNOkTXwTEpzb',
+					    //from: '1JMtIooVcEGFlN7V40wTdM5TVVF4RnAR4c6tPKhfh',
+                        from: table_id[table],
+						//where: where
+					},
+					heatmap: {
+                        enabled: hm.checked
+					}
+				});
+
+				layer.setMap(map);
+			}
+
+			es.onchange = updateLayer;
+			es.value = '0 - 20000000';
+
+			dp.onchange = updateLayer;
+			dp.value = '0 - 80';
+
+			dr.onchange = updateLayer;
+			dr.value = '0 - 60';
+
+			sd.onchange = updateLayer;
+			sd.value = '1/1/1900';
+
+			ed.onchange = updateLayer;
+			ed.value = new Date().toLocaleDateString();
+
+			rg.onchange = updateLayer;
+			rg.value = 'All';
+
+			hm.onchange = updateLayer;
+			hm.checked = false;
+            
+			tab.onchange = updateLayer;
+			tab.value = table_id['tremor_db'];
+
+			layer.setMap(map);
+		}
+    </script>
+    <script src="https://maps.googleapis.com/maps/api/js?key=AIzaSyD1B5-_lEFysnR1EsK0Y81yKbJ3v0cOHhA&callback=initMap&signed_in=true" async defer></script>
+   <!-- <script src="https://code.jquery.com/jquery-1.11.3.min.js"></script>-->
+    <script src="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.5/js/bootstrap.min.js"></script>
+
+</body>
+</html>
