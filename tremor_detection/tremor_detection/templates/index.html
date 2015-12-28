@@ -107,13 +107,7 @@
                 </label>
 
             </div>
-            <!--<div class="col-md-4">
-                <label for="endDate">
-                    End Date:
-                    <input id="endDate" type="text" min="1/1/1900" max="1/1/2016" value="1/1/2016" />
-                </label>
 
-            </div>-->
             <div class="col-md-4">
                 <div class="col-md-6" id="reg_range">
                     <label for="filterRegion">Filter region:</label>
@@ -125,7 +119,7 @@
                         <option value="west_shikoku">West Shikoku</option>
                     </select>
                 </div>
-                <div class="col-md-6" id="datasets">
+                <div class="col-md-6" id="datasets" style="display:none;">
                     <label for="dataset">Dataset:</label>
                     <select id="dataset">
                         <option value="tremor_db" default="default">Hi-Net Tremor (Annoura)</option>
@@ -350,7 +344,7 @@
 					    //from: '1tqVBRCrqUqcDmAjCStBBAckNhIGqNNOkTXwTEpzb',
 					    //from: '1JMtIooVcEGFlN7V40wTdM5TVVF4RnAR4c6tPKhfh',
                         from: table_id[table],
-						//where: where
+						where: where
 					},
 					heatmap: {
                         enabled: hm.checked
